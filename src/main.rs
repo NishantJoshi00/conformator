@@ -1,0 +1,25 @@
+mod lexer;
+mod types;
+mod utils;
+use std::{fs::File, io::Read};
+
+use color_eyre::Result;
+use nom::error;
+
+fn main() -> Result<()> {
+    color_eyre::install()?;
+    let mut file = File::open("sample.txt").unwrap();
+    let mut data = String::new();
+    file.read_to_string(&mut data).unwrap();
+    let output = lexer::parser_prime::<error::VerboseError<&str>>(&data);
+
+    let output: types::Concepts = output.unwrap().1.into();
+
+    println!("---\nAST:\n{:#?}", output);
+
+    let levels = utils::construct_staged_list(output.packages)?;
+
+    println!("---\npackage levels:\n{:#?}", levels);
+
+    Ok(())
+}

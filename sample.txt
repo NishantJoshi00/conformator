@@ -1,0 +1,8 @@
+zoxide: cargo + fzf;
+xmonad: x11 + ghcup + cargo;
+xmobar: xmonad;
+neovide: x11 + cargo;
+
+-- cargo does
+  $ bash
+  $ "cargo\ install\ {}" %;
