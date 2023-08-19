@@ -1,6 +1,7 @@
+mod functions;
 mod lexer;
+mod packages;
 mod types;
-mod utils;
 use std::{fs::File, io::Read};
 
 use color_eyre::Result;
@@ -17,7 +18,7 @@ fn main() -> Result<()> {
 
     println!("---\nAST:\n{:#?}", output);
 
-    let levels = utils::construct_staged_list(output.packages)?;
+    let levels = packages::construct_staged_list(output.packages)?;
 
     println!("---\npackage levels:\n{:#?}", levels);
 

@@ -25,14 +25,14 @@ pub struct Package<'a> {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Function<'a> {
-    name: &'a str,
-    args: Arg<'a>,
+    pub name: &'a str,
+    pub args: Arg<'a>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Expr<'a> {
-    name: &'a str,
-    argument: Arg<'a>,
+    pub name: &'a str,
+    pub argument: Arg<'a>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
