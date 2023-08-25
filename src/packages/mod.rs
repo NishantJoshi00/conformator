@@ -10,14 +10,13 @@ fn construct_package_tree<'a: 'b, 'b>(
     let output: HashMap<_, _> = packages
         .iter()
         .map(|package| {
-            let hs_dependency: HashSet<_> = package.dependency.iter().map(|&x| x).collect();
-            dependencies = dependencies.union(&hs_dependency).map(|&x| x).collect();
+            let hs_dependency: HashSet<_> = package.dependency.iter().copied().collect();
+            dependencies = dependencies.union(&hs_dependency).copied().collect();
             (package.name, hs_dependency)
         })
         .collect();
     dependencies
         .difference(&output.iter().map(|(&key, _)| key).collect::<HashSet<_>>())
-        .into_iter()
         .map(|&x| (x, HashSet::new()))
         .chain(output.into_iter())
         .collect()
@@ -31,11 +30,11 @@ fn construct_levels<'a>(
     }
     let mut levels = Vec::new();
 
-    while package_map.len() > 0 {
+    while !package_map.is_empty() {
         let mut removal_list = HashSet::new();
 
         for (&key, value) in &mut package_map {
-            if value.len() == 0 {
+            if value.is_empty() {
                 removal_list.insert(key);
             }
         }
@@ -45,7 +44,7 @@ fn construct_levels<'a>(
         });
 
         package_map.iter_mut().for_each(|(_, value)| {
-            *value = value.difference(&removal_list).map(|&x| x).collect();
+            *value = value.difference(&removal_list).copied().collect();
         });
 
         levels.push(removal_list.into_iter().collect());
@@ -82,9 +81,7 @@ fn graph_validation<'a>(graph: &'a HashMap<&'a str, HashSet<&'a str>>) -> bool {
     })
 }
 
-pub fn construct_staged_list<'a>(
-    packages: types::Packages<'a>,
-) -> Result<Vec<types::Packages<'a>>> {
+pub fn construct_staged_list(packages: types::Packages) -> Result<Vec<types::Packages>> {
     let map = construct_package_tree(&packages);
     let mut partial_iter: HashSet<_> = map.iter().map(|(&x, _)| x).collect();
     let package_map: HashMap<_, _> = packages

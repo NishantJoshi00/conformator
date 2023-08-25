@@ -12,7 +12,7 @@ use nom::{
 
 use crate::types;
 
-const SPECIAL_CHARACTERS: &'static str = ":+ ;@$\\'\"";
+const SPECIAL_CHARACTERS: &str = ":+ ;@$\\'\"";
 
 // ----------------- primitive parsers ---------------------- //
 
@@ -28,7 +28,7 @@ where
     bcomplete::escaped(acceptable, '\\', escapable)
 }
 
-fn parse_str<'a, E: error::ParseError<&'a str>>(
+pub(crate) fn parse_str<'a, E: error::ParseError<&'a str>>(
     special_character: &'a str,
 ) -> impl Parser<&'a str, &'a str, E> {
     parse_str_abstract(

@@ -1,8 +1,6 @@
-zoxide: cargo + fzf;
-xmonad: x11 + ghcup + cargo;
-xmobar: xmonad;
-neovide: x11 + cargo;
 
--- cargo does
-  $ bash
-  $ "cargo\ install\ {}" %;
+-- hello does "Hello {}";
+
+-- xyz1 does $ hello "xyz";
+
+-- main does $ print hello;

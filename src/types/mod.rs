@@ -1,7 +1,8 @@
 use std::{collections::HashSet, fmt::Display};
+pub mod fn_types;
 
 pub type Packages<'a> = HashSet<Package<'a>>;
-pub type Functions<'a> = HashSet<Function<'a>>;
+pub type Functions<'a> = Vec<Function<'a>>;
 
 #[derive(Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -97,8 +98,12 @@ impl<'a> From<Vec<Concept<'a>>> for Concepts<'a> {
             .into_iter()
             .fold(Concepts::default(), |mut initial, new_concept| {
                 match new_concept {
-                    Concept::Package(package) => initial.packages.insert(package),
-                    Concept::Function(function) => initial.functions.insert(function),
+                    Concept::Package(package) => {
+                        initial.packages.insert(package);
+                    }
+                    Concept::Function(function) => {
+                        initial.functions.push(function);
+                    }
                 };
                 initial
             })

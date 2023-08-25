@@ -1,47 +1,78 @@
 use color_eyre::{eyre::bail, Result};
-use std::{collections::HashMap, sync::Arc};
+use nom::Parser;
+use std::sync::Arc;
 
-use crate::types;
+use crate::types::{self, fn_types};
 
-pub fn function_registry_composer<'a, 'b>(
-    functions: types::Functions<'a>,
-) -> HashMap<&'a str, Arc<dyn Fn(&'b str) -> String + 'a>> {
-    HashMap::new()
+mod stdlib;
+use stdlib::standard_functions;
+
+pub fn function_registry_composer(functions: types::Functions) -> Result<fn_types::FnMap> {
+    functions
+        .into_iter()
+        .fold(Ok(standard_functions()), move |acc, fun| -> Result<_> {
+            match acc {
+                Ok(mut dir) => {
+                    let fun_name = fun.name;
+                    let fun_ty = function_interpreter(fun, &dir)?;
+                    dir.insert(fun_name, fun_ty);
+                    Ok(dir)
+                }
+                error @ Err(_) => error,
+            }
+        })
 }
 
-pub fn function_interpreter<'a: 'b, 'b>(
+pub fn function_interpreter<'a>(
     fun: types::Function<'a>,
-    function_dir: &'a HashMap<&'a str, Arc<dyn Fn(&str) -> String>>,
-) -> Result<Arc<dyn Fn(&'b str) -> String + 'b>> {
+    function_dir: &fn_types::FnMap<'a>,
+) -> Result<fn_types::ArcFn<'a>> {
     match fun.args {
-        types::Arg::String(value) => format_string_consumer(value),
-        types::Arg::Expr(expr) => expression_consumer(expr, &function_dir),
+        types::Arg::String(value) => match function_dir.get(value) {
+            Some(inner) => Ok(inner.clone()),
+            None => format_string_consumer(value),
+        },
+        types::Arg::Expr(expr) => expression_consumer(*expr, function_dir),
     }
 }
 
-pub fn expression_consumer<'a: 'b, 'b>(
-    expression: Box<types::Expr<'a>>,
-    function_dir: &'a HashMap<&'a str, Arc<dyn Fn(&str) -> String>>,
-) -> Result<Arc<dyn Fn(&'b str) -> String + 'b>> {
-    match expression.argument {
-        types::Arg::String(value) => format_string_consumer(value),
-        types::Arg::Expr(inner_expr) => {
-            let parent_function = match function_dir.get(expression.name) {
-                Some(inner) => inner.clone(),
-                None => bail!("there is no function in the scope: {}", expression.name),
-            };
+pub fn expression_consumer<'a>(
+    expression: types::Expr<'a>,
+    function_dir: &fn_types::FnMap<'a>,
+) -> Result<fn_types::ArcFn<'a>> {
+    let parent_function = match function_dir.get(expression.name) {
+        Some(inner) => inner.clone(),
+        None => bail!("there is no function in the scope: {}", expression.name),
+    };
+    let inner_expression = match expression.argument {
+        types::Arg::String(value) => match function_dir.get(value) {
+            Some(inner) => inner.clone(),
+            None => format_string_consumer(value)?,
+        },
+        types::Arg::Expr(inner_expr) => expression_consumer(*inner_expr, function_dir)?,
+    };
 
-            let inner_expression = expression_consumer(inner_expr, function_dir)?;
+    Ok(Arc::new(move |x| {
+        let inner = (inner_expression)(x);
+        (parent_function)(&inner)
+    }))
+}
 
-            Ok(Arc::new(move |x| {
-                let inner = (inner_expression)(x);
-                let x = (parent_function)(&inner);
-                x
-            }))
+pub fn format_string_consumer(input: &str) -> Result<fn_types::ArcFn> {
+    let string_pair = nom::sequence::separated_pair(
+        crate::lexer::parse_str::<()>("{"),
+        nom::bytes::complete::tag("{}"),
+        crate::lexer::parse_str::<()>(""),
+    )
+    .parse(input);
+
+    match string_pair {
+        Ok(("", (part_1, part_2))) => Ok(Arc::new(move |input| {
+            format!("{}{}{}", part_1, input, part_2)
+        })),
+        Ok((a, (_, _))) => {
+            bail!("The lexer couldn't parse the string: {}", a)
         }
+        Err(_) => Ok(Arc::new(move |_| input.to_string())),
     }
-}
-
-pub fn format_string_consumer<'a, 'b>(_data: &'a str) -> Result<Arc<dyn Fn(&'b str) -> String>> {
-    todo!()
 }

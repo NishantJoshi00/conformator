@@ -22,5 +22,14 @@ fn main() -> Result<()> {
 
     println!("---\npackage levels:\n{:#?}", levels);
 
+    let functions = functions::function_registry_composer(output.functions)?;
+
+    println!("---\nfunction execution");
+    let output = functions
+        .get("main")
+        .map(|func| func(""))
+        .unwrap_or(String::from("-1"));
+    println!("[Exited with \"{}\"]", output);
+
     Ok(())
 }
