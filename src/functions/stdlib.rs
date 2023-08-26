@@ -15,7 +15,12 @@ impl<'a, T: for<'b> Fn(&'b str) -> String + 'a> ArcFnTy<'a> for T {
 }
 
 pub(super) fn standard_functions<'a>() -> fn_types::FnMap<'a> {
-    HashMap::from([print.arc_fn("print"), bash.arc_fn("bash")])
+    HashMap::from([
+        print.arc_fn("print"),
+        bash.arc_fn("bash"),
+        bash_status.arc_fn("bash_status"),
+        debug.arc_fn("debug"),
+    ])
 }
 
 fn print(input: &str) -> String {
@@ -23,13 +28,34 @@ fn print(input: &str) -> String {
     String::new()
 }
 
-fn bash(input: &str) -> String {
+fn debug(input: &str) -> String {
+    eprintln!("{}", input);
+    input.to_string()
+}
+
+fn bash_status(input: &str) -> String {
     let command = Command::new("bash")
-        .args(["-c", &format!("\"{input}\"")])
+        .args(["-c", &format!("{input}")])
         .stdin(std::process::Stdio::inherit())
         .status();
+
     match command {
-        Ok(status) => status.to_string(),
+        Ok(status) => status.code().unwrap_or(0).to_string(),
+        Err(error) => error.to_string(),
+    }
+}
+
+fn bash(input: &str) -> String {
+    let command = Command::new("bash")
+        .args(["-c", &format!("{input}")])
+        .stdin(std::process::Stdio::inherit())
+        .output();
+
+    match command {
+        Ok(output) => std::str::from_utf8(&output.stdout)
+            .unwrap()
+            .trim()
+            .to_string(),
         Err(error) => error.to_string(),
     }
 }

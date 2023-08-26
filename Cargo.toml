@@ -8,5 +8,5 @@ edition = "2021"
 nom = "7.1.3"
 color-eyre = "0.6.2"
 
-[build-dependencies]
-cc = { version = "1.0.82", features = ["parallel"] }
+[[bin]]
+name = "interpreter"

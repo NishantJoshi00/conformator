@@ -1,6 +1,4 @@
+-- eval does $ bash "echo $(({}))";
+-- main does $ debug $ eval "10 + 10";
 
--- hello does "Hello {}";
 
--- xyz1 does $ hello "xyz";
-
--- main does $ print hello;
